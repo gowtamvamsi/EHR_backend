@@ -2,6 +2,82 @@
 
 A comprehensive healthcare management system backend built with Django REST Framework, focusing on Indian healthcare requirements and international compliance standards.
 
+## 📋 Prerequisites
+
+### Database Setup (PostgreSQL)
+1. Install PostgreSQL:
+   ```bash
+   # Ubuntu/Debian
+   sudo apt-get update
+   sudo apt-get install postgresql postgresql-contrib
+
+   # macOS (using Homebrew)
+   brew install postgresql
+
+   # Windows
+   # Download installer from https://www.postgresql.org/download/windows/
+   ```
+
+2. Create Database:
+   ```bash
+   sudo -u postgres psql
+   CREATE DATABASE ehs_db;
+   CREATE USER ehs_user WITH PASSWORD 'your_password';
+   ALTER ROLE ehs_user SET client_encoding TO 'utf8';
+   ALTER ROLE ehs_user SET default_transaction_isolation TO 'read committed';
+   ALTER ROLE ehs_user SET timezone TO 'UTC';
+   GRANT ALL PRIVILEGES ON DATABASE ehs_db TO ehs_user;
+   \q
+   ```
+
+### Redis & Celery Setup
+1. Install Redis:
+   ```bash
+   # Ubuntu/Debian
+   sudo apt-get install redis-server
+
+   # macOS
+   brew install redis
+
+   # Windows
+   # Download from https://github.com/microsoftarchive/redis/releases
+   ```
+
+2. Start Redis:
+   ```bash
+   # Linux/macOS
+   sudo service redis start
+   # or
+   redis-server
+
+   # Windows
+   redis-server.exe
+   ```
+
+3. Configure Celery:
+   - Ensure Redis URL is set in .env:
+     ```
+     CELERY_BROKER_URL=redis://localhost:6379/0
+     CELERY_RESULT_BACKEND=redis://localhost:6379/0
+     ```
+   - Start Celery worker:
+     ```bash
+     celery -A ehs_backend worker -l INFO
+     ```
+   - Start Celery beat (for scheduled tasks):
+     ```bash
+     celery -A ehs_backend beat -l INFO
+     ```
+
+### Sentry Setup
+1. Create account at [Sentry.io](https://sentry.io)
+2. Create new project (select Django)
+3. Get DSN (Data Source Name)
+4. Add to .env:
+   ```
+   SENTRY_DSN=your-sentry-dsn
+   ```
+   
 ## 🚀 Features
 
 ### 1. Authentication & User Management
