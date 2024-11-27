@@ -1,283 +1,317 @@
 # Electronic Health Software (EHS) Backend
 
-A comprehensive healthcare management system backend built with Django REST Framework, focusing on Indian healthcare requirements and international compliance standards.
+A comprehensive healthcare management system built with Django, designed for hospitals in India.
 
-## 📋 Prerequisites
+## 🏗️ Architecture
 
-### Database Setup (PostgreSQL)
-1. Install PostgreSQL:
-   ```bash
-   # Ubuntu/Debian
-   sudo apt-get update
-   sudo apt-get install postgresql postgresql-contrib
+### System Architecture
 
-   # macOS (using Homebrew)
-   brew install postgresql
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   Client Apps   │────▶│   API Gateway   │────▶│ Django Backend  │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                                                         │
+                                                         ▼
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  ElastiCache    │◀───▶│    Celery      │◀───▶│      RDS        │
+│    (Redis)      │     │   Workers       │     │  (PostgreSQL)   │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+         ▲                      ▲                        ▲
+         │                      │                        │
+         ▼                      ▼                        ▼
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│      SQS        │     │      S3         │     │    Sentry       │
+│  Message Queue  │     │  File Storage   │     │   Monitoring    │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+```
 
-   # Windows
-   # Download installer from https://www.postgresql.org/download/windows/
-   ```
+### Component Details
 
-2. Create Database:
-   ```bash
-   sudo -u postgres psql
-   CREATE DATABASE ehs_db;
-   CREATE USER ehs_user WITH PASSWORD 'your_password';
-   ALTER ROLE ehs_user SET client_encoding TO 'utf8';
-   ALTER ROLE ehs_user SET default_transaction_isolation TO 'read committed';
-   ALTER ROLE ehs_user SET timezone TO 'UTC';
-   GRANT ALL PRIVILEGES ON DATABASE ehs_db TO ehs_user;
-   \q
-   ```
+1. **Django Backend**
+   - Core application logic
+   - REST API endpoints
+   - Authentication & Authorization
+   - Data validation & processing
 
-### Redis & Celery Setup
-1. Install Redis:
-   ```bash
-   # Ubuntu/Debian
-   sudo apt-get install redis-server
+2. **Redis (ElastiCache)**
+   - Session management
+   - Cache layer
+   - Rate limiting
+   - Real-time notifications
 
-   # macOS
-   brew install redis
+3. **Celery Workers**
+   - Asynchronous task processing
+   - Document processing
+   - Email notifications
+   - Report generation
 
-   # Windows
-   # Download from https://github.com/microsoftarchive/redis/releases
-   ```
+4. **PostgreSQL (RDS)**
+   - Primary database
+   - Patient records
+   - Medical history
+   - Appointment data
 
-2. Start Redis:
-   ```bash
-   # Linux/macOS
-   sudo service redis start
-   # or
-   redis-server
+5. **AWS Services Integration**
+   - S3: Document storage
+   - SQS: Message queuing
+   - CloudWatch: Monitoring
+   - IAM: Access management
 
-   # Windows
-   redis-server.exe
-   ```
+## 🔐 Authentication & Security
 
-3. Configure Celery:
-   - Ensure Redis URL is set in .env:
-     ```
-     CELERY_BROKER_URL=redis://localhost:6379/0
-     CELERY_RESULT_BACKEND=redis://localhost:6379/0
-     ```
-   - Start Celery worker:
-     ```bash
-     celery -A ehs_backend worker -l INFO
-     ```
-   - Start Celery beat (for scheduled tasks):
-     ```bash
-     celery -A ehs_backend beat -l INFO
-     ```
+### JWT Authentication Flow
 
-### Sentry Setup
-1. Create account at [Sentry.io](https://sentry.io)
-2. Create new project (select Django)
-3. Get DSN (Data Source Name)
-4. Add to .env:
-   ```
-   SENTRY_DSN=your-sentry-dsn
-   ```
-   
-## 🚀 Features
-
-### 1. Authentication & User Management
-- **Multi-role Support**: Doctors, Administrators, Patients, Staff
-- **Secure Authentication**: JWT-based with refresh tokens
-- **Multi-Factor Authentication (MFA)**
-- **Audit Logging**: HIPAA-compliant action tracking
-
-#### APIs
+1. **Login Request**
 ```http
-POST /api/users/register/
 POST /api/users/login/
+Content-Type: application/json
+
+{
+    "username": "doctor@example.com",
+    "password": "secure_password"
+}
+```
+
+2. **Response with Tokens**
+```json
+{
+    "access": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+    "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc..."
+}
+```
+
+3. **Using Access Token**
+```javascript
+// Frontend API call example
+const response = await fetch('/api/patients/', {
+    headers: {
+        'Authorization': 'Bearer ' + accessToken,
+        'Content-Type': 'application/json'
+    }
+});
+```
+
+4. **Refresh Token Usage**
+```http
 POST /api/users/refresh-token/
-POST /api/users/mfa/enable/
-POST /api/users/mfa/verify/
-GET /api/users/audit-logs/
+Content-Type: application/json
+
+{
+    "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc..."
+}
 ```
 
-### 2. Patient Management
-- **Complete Patient Profiles**
-- **Medical History Tracking**
-- **Document Management**
-- **FHIR/HL7 Integration**
-
-#### APIs
-```http
-GET /api/patients/
-POST /api/patients/
-GET /api/patients/{id}/
-PUT /api/patients/{id}/
-GET /api/patients/{id}/medical-history/
-POST /api/patients/{id}/documents/
-GET /api/patients/{id}/fhir/
-POST /api/patients/hl7/import/
-```
-
-### 3. Appointment Management
-- **Calendar-based Scheduling**
-- **Conflict Detection**
-- **Status Tracking**
-
-#### APIs
-```http
-GET /api/appointments/
-POST /api/appointments/
-GET /api/appointments/{id}/
-PUT /api/appointments/{id}/status/
-GET /api/appointments/doctor/{doctor_id}/schedule/
-```
-
-### 4. Billing & Payments
-- **Invoice Generation**
-- **Payment Processing**
-- **Financial Records**
-
-#### APIs
-```http
-POST /api/billing/invoices/
-GET /api/billing/invoices/{id}/
-POST /api/billing/payments/
-GET /api/billing/invoices/{id}/payments/
-```
-
-### 5. Analytics & Reporting
-- **Patient Demographics**
-- **Financial Analytics**
-- **Appointment Statistics**
-
-#### APIs
-```http
-GET /api/analytics/patients/demographics/
-GET /api/analytics/financial/summary/
-GET /api/analytics/appointments/statistics/
-```
-
-## 🔒 Security Features
-
-- End-to-end encryption
+### Security Features
+- JWT with short-lived access tokens (1 hour)
+- Refresh tokens for extended sessions (1 day)
 - Role-based access control (RBAC)
-- HIPAA compliance measures
-- Audit logging
-- Data encryption at rest
-- Secure file storage
+- Multi-Factor Authentication (MFA)
+- HIPAA-compliant audit logging
+- Rate limiting
+- SSL/TLS encryption
 
-## 🧪 Test Coverage
+## 🚀 AWS Deployment Guide
 
-### 1. User Management Tests
-```python
-class UserModelTests(TestCase):
-    - test_user_creation()
-    - test_user_permissions()
+### Prerequisites
+1. AWS Account with required permissions
+2. AWS CLI configured
+3. Docker installed
+4. kubectl configured
 
-class AuditLogTests(TestCase):
-    - test_audit_log_creation()
-```
+### Infrastructure Setup
 
-### 2. Patient Management Tests
-```python
-class PatientModelTests(TestCase):
-    - test_patient_creation()
-    - test_fhir_conversion()
-
-class DocumentTests(TestCase):
-    - test_document_creation()
-
-class TestHL7Integration:
-    - test_hl7_message_parsing()
-```
-
-### 3. Appointment Tests
-```python
-class AppointmentTests(TestCase):
-    - test_appointment_creation()
-    - test_appointment_slot_conflict()
-```
-
-### 4. Billing Tests
-```python
-class BillingTests(TestCase):
-    - test_invoice_creation()
-    - test_payment_processing()
-```
-
-## 🛠 Technical Stack
-
-- **Framework**: Django 5.0.1
-- **API**: Django REST Framework 3.14.0
-- **Database**: PostgreSQL
-- **Cache & Queue**: Redis, Celery
-- **Authentication**: JWT (djangorestframework-simplejwt)
-- **Storage**: Django Storages (AWS S3 compatible)
-- **Monitoring**: Sentry
-- **Healthcare Standards**: FHIR, HL7
-- **Testing**: pytest, Django Test Framework
-
-## 🚀 Getting Started
-
-1. Clone the repository
-2. Create and activate virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # Linux/Mac
-   venv\Scripts\activate     # Windows
-   ```
-
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Set up environment variables:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configurations
-   ```
-
-5. Run migrations:
-   ```bash
-   python manage.py migrate
-   ```
-
-6. Start development server:
-   ```bash
-   python manage.py runserver
-   ```
-
-## 🐳 Docker Deployment
-
+1. **VPC Configuration**
 ```bash
-docker-compose up -d
+# Create VPC with public and private subnets
+aws ec2 create-vpc --cidr-block 10.0.0.0/16
+
+# Create subnets
+aws ec2 create-subnet --vpc-id <vpc-id> --cidr-block 10.0.1.0/24
+aws ec2 create-subnet --vpc-id <vpc-id> --cidr-block 10.0.2.0/24
 ```
 
-## 🧪 Running Tests
-
+2. **RDS Setup**
 ```bash
-# Run all tests with coverage
-pytest --cov
-
-# Run specific test module
-pytest tests/test_users.py
+# Create RDS instance
+aws rds create-db-instance \
+    --db-instance-identifier ehs-db \
+    --db-instance-class db.t3.micro \
+    --engine postgres \
+    --master-username admin \
+    --master-user-password <password> \
+    --allocated-storage 20
 ```
 
-## 📝 API Documentation
+3. **ElastiCache Setup**
+```bash
+# Create Redis cluster
+aws elasticache create-cache-cluster \
+    --cache-cluster-id ehs-redis \
+    --engine redis \
+    --cache-node-type cache.t3.micro \
+    --num-cache-nodes 1
+```
 
-API documentation is available at `/api/docs/` when running the server.
+4. **S3 Bucket**
+```bash
+# Create bucket
+aws s3 mb s3://ehs-documents
 
-## 🔐 Compliance
+# Configure CORS
+aws s3api put-bucket-cors --bucket ehs-documents \
+    --cors-configuration file://cors.json
+```
 
-- HIPAA (Health Insurance Portability and Accountability Act)
-- GDPR (General Data Protection Regulation)
-- India DPDP (Digital Personal Data Protection)
+5. **SQS Queue**
+```bash
+# Create queue
+aws sqs create-queue --queue-name ehs-tasks
+```
 
-## 📊 Monitoring
+### Application Deployment
 
-- Application monitoring via Sentry
-- Comprehensive audit logging
-- Performance metrics tracking
+1. **Build Docker Image**
+```bash
+docker build -t ehs-backend .
+docker tag ehs-backend:latest <aws-account-id>.dkr.ecr.region.amazonaws.com/ehs-backend
+```
 
-## 🔄 Data Integration
+2. **Push to ECR**
+```bash
+aws ecr get-login-password --region region | docker login --username AWS --password-stdin <aws-account-id>.dkr.ecr.region.amazonaws.com
+docker push <aws-account-id>.dkr.ecr.region.amazonaws.com/ehs-backend
+```
 
-- FHIR (Fast Healthcare Interoperability Resources) support
-- HL7 (Health Level 7) message processing
-- Support for standard medical imaging formats (DICOM)
+3. **Deploy to ECS**
+```bash
+aws ecs create-service \
+    --cluster ehs-cluster \
+    --service-name ehs-service \
+    --task-definition ehs-task \
+    --desired-count 2
+```
+
+## 📡 API Documentation
+
+### Authentication APIs
+```http
+POST   /api/users/register/        # New user registration
+POST   /api/users/login/           # User login
+POST   /api/users/refresh-token/   # Refresh JWT token
+POST   /api/users/mfa/enable/      # Enable MFA
+POST   /api/users/mfa/verify/      # Verify MFA token
+```
+
+### Patient Management APIs
+```http
+GET    /api/patients/              # List patients
+POST   /api/patients/              # Create patient
+GET    /api/patients/{id}/         # Get patient details
+PUT    /api/patients/{id}/         # Update patient
+GET    /api/patients/{id}/medical-history/  # Get medical history
+POST   /api/patients/{id}/documents/        # Upload document
+GET    /api/patients/{id}/fhir/    # Get FHIR data
+POST   /api/patients/hl7/import/   # Import HL7 message
+```
+
+### Appointment APIs
+```http
+GET    /api/appointments/          # List appointments
+POST   /api/appointments/          # Create appointment
+PUT    /api/appointments/{id}/     # Update appointment
+GET    /api/appointments/doctor/{id}/schedule/  # Get doctor schedule
+```
+
+### Billing APIs
+```http
+GET    /api/billing/invoices/      # List invoices
+POST   /api/billing/invoices/      # Create invoice
+GET    /api/billing/invoices/{id}/payments/  # Get invoice payments
+POST   /api/billing/payments/      # Process payment
+```
+
+## 🧪 Testing
+
+### Running Tests
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=. --cov-report=html
+
+# Run specific test file
+pytest tests/test_patients.py
+```
+
+### Test Categories
+
+1. **Unit Tests**
+   - Models
+   - Services
+   - Utilities
+   - Serializers
+
+2. **Integration Tests**
+   - API endpoints
+   - Database operations
+   - File operations
+   - External service integrations
+
+3. **Authentication Tests**
+   - Login/Logout
+   - Token management
+   - Permission checks
+   - MFA verification
+
+4. **Patient Management Tests**
+   - CRUD operations
+   - Document handling
+   - Medical history
+   - FHIR/HL7 integration
+
+5. **Appointment Tests**
+   - Scheduling
+   - Conflict detection
+   - Status updates
+   - Calendar operations
+
+6. **Billing Tests**
+   - Invoice generation
+   - Payment processing
+   - Tax calculations
+   - Report generation
+
+### Test Results Example
+```
+============================= test session starts ==============================
+platform linux -- Python 3.11.0, pytest-7.4.0
+plugins: cov-4.1.0, django-4.7.0
+collected 89 items
+
+tests/test_analytics_api.py ........                                   [  8%]
+tests/test_appointments_api.py ..........                             [ 20%]
+tests/test_billing_api.py .........                                   [ 30%]
+tests/test_patients_api.py ...................                        [ 51%]
+tests/test_patients.py ....................                           [ 73%]
+tests/test_users.py .................                                 [ 92%]
+tests/test_appointments.py ........                                   [100%]
+
+----------- coverage: platform linux, python 3.11.0-final-0 -----------
+Name                            Stmts   Miss  Cover
+---------------------------------------------------
+patients/models.py                125      4    97%
+patients/services.py              89       6    93%
+patients/views.py                 178     12    93%
+appointments/models.py            45       2    96%
+billing/models.py                 67       4    94%
+users/models.py                   89       5    94%
+---------------------------------------------------
+TOTAL                            593     33    94%
+```
+
+## 📚 Additional Resources
+
+- [API Documentation](https://api-docs.ehs-system.com)
+- [AWS Best Practices](https://aws.amazon.com/architecture/well-architected/)
+- [Security Guidelines](https://www.hipaa.com/)
