@@ -110,6 +110,100 @@ Content-Type: application/json
 - Rate limiting
 - SSL/TLS encryption
 
+## 📡 API Documentation
+
+### Authentication APIs
+```http
+POST   /api/users/register/        # New user registration
+POST   /api/users/login/           # User login
+POST   /api/users/refresh-token/   # Refresh JWT token
+POST   /api/users/mfa/enable/      # Enable MFA
+POST   /api/users/mfa/verify/      # Verify MFA token
+```
+
+### Patient Management APIs
+```http
+GET    /api/patients/              # List/Search patients
+POST   /api/patients/              # Create patient
+GET    /api/patients/{id}/         # Get patient details
+PUT    /api/patients/{id}/         # Update patient
+GET    /api/patients/{id}/medical-history/  # Get medical history
+POST   /api/patients/{id}/documents/        # Upload document
+GET    /api/patients/{id}/fhir/    # Get FHIR data
+POST   /api/patients/hl7/import/   # Import HL7 message
+```
+
+#### Patient Search Feature
+The patient search API supports searching by:
+- First name
+- Last name
+- Patient ID
+- Email
+- Phone number
+
+Example search requests:
+```http
+GET /api/patients/?search=john           # Search by name
+GET /api/patients/?search=P12345         # Search by ID
+GET /api/patients/?search=+91987654321   # Search by phone
+```
+
+Search features:
+- Case-insensitive matching
+- Partial matching support
+- Role-based access control
+- Pagination of results
+- Multiple field search
+
+### Appointment APIs
+```http
+GET    /api/appointments/          # List appointments
+POST   /api/appointments/          # Create appointment
+PUT    /api/appointments/{id}/     # Update appointment
+GET    /api/appointments/doctor/{id}/schedule/  # Get doctor schedule
+GET    /api/appointments/date-range/  # Get appointments by date range
+```
+
+#### Date Range Appointment Search
+Get appointments within a specific date range with optional filters:
+
+```http
+GET /api/appointments/date-range/?start_date=2024-01-01&end_date=2024-01-31
+```
+
+Optional filters:
+```http
+GET /api/appointments/date-range/?start_date=2024-01-01&end_date=2024-01-31&doctor_id=1&status=SCHEDULED
+```
+
+Response format:
+```json
+{
+    "start_date": "2024-01-01",
+    "end_date": "2024-01-31",
+    "count": 10,
+    "appointments": [
+        {
+            "id": 1,
+            "patient": 1,
+            "doctor": 1,
+            "date": "2024-01-01",
+            "time_slot": "10:00:00",
+            "status": "SCHEDULED"
+        }
+        // ... more appointments
+    ]
+}
+```
+
+### Billing APIs
+```http
+GET    /api/billing/invoices/      # List invoices
+POST   /api/billing/invoices/      # Create invoice
+GET    /api/billing/invoices/{id}/payments/  # Get invoice payments
+POST   /api/billing/payments/      # Process payment
+```
+
 ## 🚀 AWS Deployment Guide
 
 ### Prerequisites
@@ -191,45 +285,6 @@ aws ecs create-service \
     --desired-count 2
 ```
 
-## 📡 API Documentation
-
-### Authentication APIs
-```http
-POST   /api/users/register/        # New user registration
-POST   /api/users/login/           # User login
-POST   /api/users/refresh-token/   # Refresh JWT token
-POST   /api/users/mfa/enable/      # Enable MFA
-POST   /api/users/mfa/verify/      # Verify MFA token
-```
-
-### Patient Management APIs
-```http
-GET    /api/patients/              # List patients
-POST   /api/patients/              # Create patient
-GET    /api/patients/{id}/         # Get patient details
-PUT    /api/patients/{id}/         # Update patient
-GET    /api/patients/{id}/medical-history/  # Get medical history
-POST   /api/patients/{id}/documents/        # Upload document
-GET    /api/patients/{id}/fhir/    # Get FHIR data
-POST   /api/patients/hl7/import/   # Import HL7 message
-```
-
-### Appointment APIs
-```http
-GET    /api/appointments/          # List appointments
-POST   /api/appointments/          # Create appointment
-PUT    /api/appointments/{id}/     # Update appointment
-GET    /api/appointments/doctor/{id}/schedule/  # Get doctor schedule
-```
-
-### Billing APIs
-```http
-GET    /api/billing/invoices/      # List invoices
-POST   /api/billing/invoices/      # Create invoice
-GET    /api/billing/invoices/{id}/payments/  # Get invoice payments
-POST   /api/billing/payments/      # Process payment
-```
-
 ## 🧪 Testing
 
 ### Running Tests
@@ -269,12 +324,14 @@ pytest tests/test_patients.py
    - Document handling
    - Medical history
    - FHIR/HL7 integration
+   - Search functionality
 
 5. **Appointment Tests**
    - Scheduling
    - Conflict detection
    - Status updates
    - Calendar operations
+   - Date range filtering
 
 6. **Billing Tests**
    - Invoice generation

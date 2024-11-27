@@ -1,8 +1,9 @@
-from rest_framework import viewsets, permissions, status, parsers
+from rest_framework import viewsets, permissions, status, parsers, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.core.files.storage import default_storage
+from django.db.models import Q
 from .models import Patient, MedicalHistory, Document, HL7Message
 from .serializers import (
     PatientSerializer, 
@@ -18,13 +19,36 @@ class PatientViewSet(viewsets.ModelViewSet):
     queryset = Patient.objects.all()
     serializer_class = PatientSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = [
+        'user__first_name',
+        'user__last_name',
+        'patient_id',
+        'user__email',
+        'user__phone_number'
+    ]
 
     def get_queryset(self):
-        """Filter queryset based on user role"""
+        """Filter queryset based on user role and search query"""
         user = self.request.user
+        queryset = Patient.objects.all()
+
+        # Filter based on user role
         if user.role == User.Role.PATIENT:
-            return Patient.objects.filter(user=user)
-        return Patient.objects.all()
+            return queryset.filter(user=user)
+
+        # Handle search query
+        search_query = self.request.query_params.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(user__first_name__icontains=search_query) |
+                Q(user__last_name__icontains=search_query) |
+                Q(patient_id__icontains=search_query) |
+                Q(user__email__icontains=search_query) |
+                Q(user__phone_number__icontains=search_query)
+            ).distinct()
+
+        return queryset
 
     def perform_create(self, serializer):
         """Create new patient and log action"""

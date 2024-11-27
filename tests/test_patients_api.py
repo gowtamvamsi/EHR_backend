@@ -41,6 +41,76 @@ class TestPatientAPI:
         assert response.status_code == status.HTTP_201_CREATED
         assert Patient.objects.count() == 1
 
+    def test_search_patients(self, authenticated_client, create_user):
+        # Create test patients
+        user1 = User.objects.create_user(
+            username='john.doe',
+            first_name='John',
+            last_name='Doe',
+            email='john@example.com',
+            password='testpass',
+            role=User.Role.PATIENT
+        )
+        user2 = User.objects.create_user(
+            username='jane.smith',
+            first_name='Jane',
+            last_name='Smith',
+            email='jane@example.com',
+            password='testpass',
+            role=User.Role.PATIENT
+        )
+        
+        Patient.objects.create(
+            user=user1,
+            patient_id='P12345',
+            date_of_birth='1990-01-01',
+            blood_group='O+',
+            emergency_contact='+911234567890'
+        )
+        Patient.objects.create(
+            user=user2,
+            patient_id='P67890',
+            date_of_birth='1992-01-01',
+            blood_group='A+',
+            emergency_contact='+911234567891'
+        )
+
+        # Test search by first name
+        response = authenticated_client.get(
+            reverse('patient-list'),
+            {'search': 'John'}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data) == 1
+        assert response.data[0]['user']['first_name'] == 'John'
+
+        # Test search by last name
+        response = authenticated_client.get(
+            reverse('patient-list'),
+            {'search': 'Smith'}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data) == 1
+        assert response.data[0]['user']['last_name'] == 'Smith'
+
+        # Test search by patient ID
+        response = authenticated_client.get(
+            reverse('patient-list'),
+            {'search': 'P12345'}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data) == 1
+        assert response.data[0]['patient_id'] == 'P12345'
+
+        # Test partial search
+        response = authenticated_client.get(
+            reverse('patient-list'),
+            {'search': 'jo'}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data) == 1
+        assert response.data[0]['user']['first_name'] == 'John'
+
     def test_get_patient_detail(self, authenticated_client, create_user, patient_data):
         patient = Patient.objects.create(user=create_user, **patient_data)
         response = authenticated_client.get(

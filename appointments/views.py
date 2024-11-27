@@ -64,3 +64,51 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         
         serializer = ScheduleSerializer(appointments, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def date_range(self, request):
+        """Get appointments within a specified date range"""
+        try:
+            start_date = request.query_params.get('start_date')
+            end_date = request.query_params.get('end_date')
+
+            if not start_date or not end_date:
+                return Response(
+                    {'detail': 'Both start_date and end_date are required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Parse dates
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+
+            # Optional filters
+            doctor_id = request.query_params.get('doctor_id')
+            patient_id = request.query_params.get('patient_id')
+            appointment_status = request.query_params.get('status')
+
+            # Build query
+            query = Q(date__range=[start_date, end_date])
+            
+            if doctor_id:
+                query &= Q(doctor_id=doctor_id)
+            if patient_id:
+                query &= Q(patient_id=patient_id)
+            if appointment_status:
+                query &= Q(status=appointment_status)
+
+            appointments = Appointment.objects.filter(query).order_by('date', 'time_slot')
+            serializer = self.get_serializer(appointments, many=True)
+            
+            return Response({
+                'start_date': start_date,
+                'end_date': end_date,
+                'count': appointments.count(),
+                'appointments': serializer.data
+            })
+
+        except ValueError as e:
+            return Response(
+                {'detail': f'Invalid date format. Use YYYY-MM-DD. Error: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
