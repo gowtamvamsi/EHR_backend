@@ -9,8 +9,10 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_started
+      redis:
+        condition: service_started
     env_file:
       - .env
 
@@ -19,9 +21,12 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=ehs_db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=your-db-password
+      - DJANGO_SETTINGS_MODULE=ehs_backend.settings
+      - DB_HOST=db
+      - DB_NAME=ehs_db
+      - DB_USER=admin
+      - DB_PASSWORD=admin
+      - DB_PORT=5432
 
   redis:
     image: redis:6
