@@ -14,7 +14,7 @@ class Appointment(models.Model):
     doctor = models.ForeignKey(
         User, 
         on_delete=models.CASCADE,
-        limit_choices_to={'role': Role.DOCTOR}
+        limit_choices_to={'role': Role.RoleType.DOCTOR}
     )
     date = models.DateField()
     time_slot = models.TimeField()

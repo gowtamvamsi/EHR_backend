@@ -14,7 +14,7 @@ class Command(BaseCommand):
                     password='admin123',
                     first_name='Admin',
                     last_name='User',
-                    role=Role.ADMIN,  # Use enum value from User model
+                    role=Role.RoleType.ADMIN,  # Use enum value from User model
                     is_mfa_enabled=False,
                     phone_number='+911234567890'
                 )

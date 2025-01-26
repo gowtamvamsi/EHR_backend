@@ -56,8 +56,6 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_started
     environment:
@@ -69,22 +67,6 @@ services:
       - DB_PASSWORD=ehs_password
       - DB_HOST=db
       - DB_PORT=5432
-
-  db:
-    image: postgres:13
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_DB=ehs_db
-      - POSTGRES_USER=ehs_user
-      - POSTGRES_PASSWORD=ehs_password
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ehs_user"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
   redis:
     image: redis:6

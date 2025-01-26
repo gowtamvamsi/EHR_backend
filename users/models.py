@@ -1,21 +1,38 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser,Group
 from django.db import models
-from django.conf import settings
 from django.utils.translation import gettext_lazy as _
+from django.conf import settings 
 
-class Role(models.TextChoices):
-    ADMIN = 'ADMIN', _('Administrator')
-    DOCTOR = 'DOCTOR', _('Doctor')
-    PATIENT = 'PATIENT', _('Patient')
-    STAFF = 'STAFF', _('Staff')
+class Role(models.Model):
+    class RoleType(models.TextChoices):
+        ADMIN = 'ADMIN', _('Administrator')
+        DOCTOR = 'DOCTOR', _('Doctor')
+        PATIENT = 'PATIENT', _('Patient')
+        STAFF = 'STAFF', _('Staff')
+    group = models.OneToOneField(
+        Group, 
+        on_delete=models.CASCADE, 
+        related_name="role"
+    )
+    description = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.group.name} - {self.description}"
+    
 class User(AbstractUser):
-
     role = models.CharField(
         max_length=20,
-        choices=Role.choices,
-        default=Role.PATIENT
+        choices=Role.RoleType.choices,
+        default=Role.RoleType.PATIENT
     )
-    phone_number = models.CharField(max_length=15)
+    phone_number = models.CharField(
+        max_length=15,
+        verbose_name="Phone Number",
+        help_text="Contact phone number for the user.",
+        blank=True,  # Ensures phone_number is required at the model level
+        null=False    # Ensures the database column cannot store NULL values
+    )
     is_mfa_enabled = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

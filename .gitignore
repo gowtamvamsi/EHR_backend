@@ -3,3 +3,4 @@ venv/
 demo.md
 *.pyc
 __pycache__/
+blue_env/

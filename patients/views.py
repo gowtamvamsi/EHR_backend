@@ -13,7 +13,7 @@ from .serializers import (
 )
 from .services import ImageProcessor, FHIRExporter, HL7Processor
 from .tasks import process_medical_image
-from users.models import User, AuditLog
+from users.models import User, Role, AuditLog
 
 class PatientViewSet(viewsets.ModelViewSet):
     queryset = Patient.objects.all()
@@ -34,7 +34,7 @@ class PatientViewSet(viewsets.ModelViewSet):
         queryset = Patient.objects.all()
 
         # Filter based on user role
-        if user.role == User.Role.PATIENT:
+        if user.role == Role.RoleType.PATIENT:
             return queryset.filter(user=user)
 
         # Handle search query
@@ -81,7 +81,7 @@ class PatientViewSet(viewsets.ModelViewSet):
         
         # Check permissions
         if not request.user.has_perm('users.can_view_patient_records'):
-            if request.user.role != User.Role.DOCTOR and request.user != patient.user:
+            if request.user.role != Role.RoleType.DOCTOR and request.user != patient.user:
                 return Response(
                     {"detail": "Permission denied"},
                     status=status.HTTP_403_FORBIDDEN

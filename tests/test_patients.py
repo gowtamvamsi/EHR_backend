@@ -10,7 +10,7 @@ class PatientModelTests(TestCase):
         self.user = User.objects.create_user(
             username='testpatient',
             password='testpass',
-            role=User.Role.PATIENT
+            role=Role.RoleType.PATIENT
         )
         self.patient = Patient.objects.create(
             user=self.user,

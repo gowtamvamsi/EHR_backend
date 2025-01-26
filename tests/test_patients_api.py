@@ -49,7 +49,7 @@ class TestPatientAPI:
             last_name='Doe',
             email='john@example.com',
             password='testpass',
-            role=User.Role.PATIENT
+            role=Role.RoleType.PATIENT
         )
         user2 = User.objects.create_user(
             username='jane.smith',
@@ -57,7 +57,7 @@ class TestPatientAPI:
             last_name='Smith',
             email='jane@example.com',
             password='testpass',
-            role=User.Role.PATIENT
+            role=Role.RoleType.PATIENT
         )
         
         Patient.objects.create(

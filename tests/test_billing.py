@@ -11,12 +11,12 @@ class BillingTests(TestCase):
         self.doctor = User.objects.create_user(
             username='doctor',
             password='testpass',
-            role=User.Role.DOCTOR
+            role=Role.RoleType.DOCTOR
         )
         self.patient_user = User.objects.create_user(
             username='patient',
             password='testpass',
-            role=User.Role.PATIENT
+            role=Role.RoleType.PATIENT
         )
         self.patient = Patient.objects.create(
             user=self.patient_user,

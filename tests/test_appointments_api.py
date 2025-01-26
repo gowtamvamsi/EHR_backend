@@ -12,7 +12,7 @@ def doctor_user():
     return User.objects.create_user(
         username='doctor',
         password='testpass',
-        role=User.Role.DOCTOR
+        role=Role.RoleType.DOCTOR
     )
 
 @pytest.fixture

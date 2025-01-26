@@ -2,7 +2,7 @@ import pytest
 import os
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
-from users.models import User
+from users.models import User, Role
 
 @pytest.fixture
 def api_client():
@@ -16,7 +16,7 @@ def create_user():
         email='test@example.com',
         first_name='Test',
         last_name='User',
-        role=User.Role.PATIENT,
+        role=Role.RoleType.PATIENT,
         phone_number='+911234567890'
     )
 
@@ -33,7 +33,7 @@ def doctor_user():
         email='doctor@example.com',
         first_name='Doctor',
         last_name='Test',
-        role=User.Role.DOCTOR,
+        role=Role.RoleType.DOCTOR,
         phone_number='+911234567891'
     )
 
