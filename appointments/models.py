@@ -1,5 +1,6 @@
 from django.db import models
 from users.models import User
+from users.models import Role
 from patients.models import Patient
 
 class Appointment(models.Model):
@@ -13,7 +14,7 @@ class Appointment(models.Model):
     doctor = models.ForeignKey(
         User, 
         on_delete=models.CASCADE,
-        limit_choices_to={'role': User.Role.DOCTOR}
+        limit_choices_to={'role': Role.DOCTOR}
     )
     date = models.DateField()
     time_slot = models.TimeField()

@@ -3,12 +3,12 @@ from django.db import models
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
+class Role(models.TextChoices):
+    ADMIN = 'ADMIN', _('Administrator')
+    DOCTOR = 'DOCTOR', _('Doctor')
+    PATIENT = 'PATIENT', _('Patient')
+    STAFF = 'STAFF', _('Staff')
 class User(AbstractUser):
-    class Role(models.TextChoices):
-        ADMIN = 'ADMIN', _('Administrator')
-        DOCTOR = 'DOCTOR', _('Doctor')
-        PATIENT = 'PATIENT', _('Patient')
-        STAFF = 'STAFF', _('Staff')
 
     role = models.CharField(
         max_length=20,
