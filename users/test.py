@@ -65,4 +65,4 @@ class UserManagementAPITests(APITestCase):
      
         # Assertions
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn(self.role.group, self.role_user.groups.all())
+        self.assertIn(self.doctor_role.group, self.role_user.groups.all())
