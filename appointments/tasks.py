@@ -11,9 +11,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Twilio Credentials from settings
-TWILIO_ACCOUNT_SID = settings.TWILIO_ACCOUNT_SID
-TWILIO_AUTH_TOKEN = settings.TWILIO_AUTH_TOKEN
-TWILIO_PHONE_NUMBER = settings.TWILIO_PHONE_NUMBER
+TWILIO_ACCOUNT_SID = getattr(settings, "TWILIO_ACCOUNT_SID", None)
+TWILIO_AUTH_TOKEN = getattr(settings, "TWILIO_AUTH_TOKEN", None)
+TWILIO_PHONE_NUMBER = getattr(settings, "TWILIO_PHONE_NUMBER", None)
 
 @shared_task
 def send_appointment_reminders():
@@ -102,3 +102,39 @@ def send_cancellation_notification(appointment_id):
         logger.info(f"Cancellation notification sent to {appointment.patient.user.email} for appointment {appointment.id}")
     except Appointment.DoesNotExist:
         logger.error(f"Appointment {appointment_id} not found for cancellation notification.")
+
+@shared_task
+def send_reschedule_notification(appointment_id):
+    """Send notification to the patient when an appointment is rescheduled"""
+    try:
+        appointment = Appointment.objects.get(id=appointment_id)
+        subject = 'Appointment Rescheduled'
+        message = f"Your appointment with Dr. {appointment.doctor.get_full_name()} has been rescheduled to {appointment.date} at {appointment.time_slot}."
+        recipient_email = [appointment.patient.user.email]
+        recipient_phone = appointment.patient.user.phone_number
+        
+        # Send email notification
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=recipient_email,
+            fail_silently=True
+        )
+        
+        # Send SMS notification
+        if recipient_phone:
+            client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+            try:
+                client.messages.create(
+                    body=message,
+                    from_=TWILIO_PHONE_NUMBER,
+                    to=recipient_phone
+                )
+                logger.info(f"SMS reschedule notification sent to {recipient_phone} for appointment {appointment.id}")
+            except Exception as e:
+                logger.error(f"Failed to send SMS reschedule notification to {recipient_phone}: {str(e)}")
+        
+        logger.info(f"Reschedule notification sent to {appointment.patient.user.email} for appointment {appointment.id}")
+    except Appointment.DoesNotExist:
+        logger.error(f"Appointment {appointment_id} not found for reschedule notification.")
