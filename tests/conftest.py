@@ -16,7 +16,7 @@ def create_user():
         email='test@example.com',
         first_name='Test',
         last_name='User',
-        role=User.Role.PATIENT,
+        role='PATIENT',
         phone_number='+911234567890'
     )
 
@@ -33,7 +33,7 @@ def doctor_user():
         email='doctor@example.com',
         first_name='Doctor',
         last_name='Test',
-        role=User.Role.DOCTOR,
+        role='DOCTOR',
         phone_number='+911234567891'
     )
 

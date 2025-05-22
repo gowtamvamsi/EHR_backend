@@ -12,7 +12,7 @@ def doctor_user():
     return User.objects.create_user(
         username='doctor',
         password='testpass',
-        role=User.Role.DOCTOR
+        role='DOCTOR'
     )
 
 @pytest.fixture
@@ -56,6 +56,29 @@ class TestAppointmentAPI:
             format='json'
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_cancel_appointment(self, authenticated_client, appointment_data):
+        # Create appointment
+        response = authenticated_client.post(
+            reverse('appointment-list'),
+            appointment_data,
+            format='json'
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        appointment_id = response.data['id']
+        
+        # Cancel appointment
+        response = authenticated_client.put(
+            reverse('appointment-status', kwargs={'pk': appointment_id}),
+            {'status': 'CANCELLED'},
+            format='json'
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['status'] == 'CANCELLED'
+
+        # Verify the appointment status is updated in the database
+        updated_appointment = Appointment.objects.get(id=appointment_id)
+        assert updated_appointment.status == Appointment.Status.CANCELLED
 
     def test_update_appointment_status(self, authenticated_client, appointment_data):
         # Create appointment
